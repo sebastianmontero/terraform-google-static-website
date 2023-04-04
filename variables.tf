@@ -71,6 +71,12 @@ variable "enable_http" {
   default     = true
 }
 
+variable "enable_http_to_https_redirect" {
+  description = "Set to true to enable http requests to be redirected to https. If set to 'true' enable_ssl should be set to true and enable_http to false"
+  type        = bool
+  default     = false
+}
+
 variable "enable_cdn" {
   description = "Set to `true` to enable cdn on website backend bucket."
   type        = bool

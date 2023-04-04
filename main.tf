@@ -2,13 +2,13 @@ locals {
   # We have to use dashes instead of dots in the access log bucket, because that bucket is not a website
   website_domain_name_dashed = replace(var.website_domain_name, ".", "-")
   # access_log_kms_keys        = var.access_logs_kms_key_name == "" ? [] : [var.access_logs_kms_key_name]
-  website_kms_keys           = var.website_kms_key_name == "" ? [] : [var.website_kms_key_name]
-  domain_names = concat([var.website_domain_name], var.additional_domain_names)
+  website_kms_keys = var.website_kms_key_name == "" ? [] : [var.website_kms_key_name]
+  domain_names     = concat([var.website_domain_name], var.additional_domain_names)
 }
 
 
 resource "google_storage_bucket" "website" {
-  
+
   project = var.project
 
   name          = local.website_domain_name_dashed
@@ -62,7 +62,7 @@ resource "google_storage_default_object_access_control" "website_read" {
 }
 
 resource "google_compute_backend_bucket" "static" {
-  project  = var.project
+  project     = var.project
   name        = "${local.website_domain_name_dashed}-bucket"
   bucket_name = google_storage_bucket.website.name
   enable_cdn  = var.enable_cdn
@@ -70,23 +70,25 @@ resource "google_compute_backend_bucket" "static" {
 
 # Create HTTPS certificate
 resource "google_compute_managed_ssl_certificate" "website_cert" {
-  name        = "${local.website_domain_name_dashed}-cert"
+  name = "${local.website_domain_name_dashed}-cert"
   managed {
     domains = local.domain_names
   }
 }
 
 module "load_balancer" {
-  source = "github.com/gruntwork-io/terraform-google-load-balancer.git//modules/http-load-balancer?ref=v0.3.0"
+  source = "github.com/sebastianmontero/terraform-google-load-balancer.git//modules/http-load-balancer?ref=v0.6.0"
+  # source = "../terraform-google-load-balancer/modules/http-load-balancer"
 
-  name                  = local.website_domain_name_dashed
-  project               = var.project
-  url_map               = google_compute_url_map.urlmap.self_link
-  custom_domain_names   = local.domain_names
-  enable_http           = var.enable_http
-  enable_ssl            = true
-  ssl_certificates      = [google_compute_managed_ssl_certificate.website_cert.self_link]
-  custom_labels         = var.custom_labels
+  name                          = local.website_domain_name_dashed
+  project                       = var.project
+  url_map                       = google_compute_url_map.urlmap.self_link
+  custom_domain_names           = local.domain_names
+  enable_http                   = var.enable_http
+  enable_http_to_https_redirect = var.enable_http_to_https_redirect
+  enable_ssl                    = true
+  ssl_certificates              = [google_compute_managed_ssl_certificate.website_cert.self_link]
+  custom_labels                 = var.custom_labels
 }
 
 # ------------------------------------------------------------------------------
